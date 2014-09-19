@@ -9,8 +9,7 @@ namespace Orchard.Data
     /// Add ability for the configuration event handler be aware of parameters
     /// </summary>
     /// <param name="parameters"></param>
-    public interface ISessionConfigurationEventsWithParameters : ISessionConfigurationEvents
-    {
+    public interface ISessionConfigurationEventsWithParameters : ISessionConfigurationEvents {
         void SetParameters(Orchard.Data.Providers.SessionFactoryParameters parameters);
     }
 
