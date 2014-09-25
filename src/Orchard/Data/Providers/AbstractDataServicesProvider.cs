@@ -39,7 +39,7 @@ namespace Orchard.Data.Providers {
             var config = Fluently.Configure();
 
             parameters.Configurers.OfType<ISessionConfigurationEventsWithParameters>()
-                .Invoke(c => c.SetParameters(parameters), Logger);
+                .Invoke(c => c.Parameters=parameters, Logger);
 
             parameters.Configurers.Invoke(c => c.Created(config, persistenceModel), Logger);
 
