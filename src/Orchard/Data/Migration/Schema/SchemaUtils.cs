@@ -20,6 +20,11 @@ namespace Orchard.Data.Migration.Schema {
                     dbType = DbType.Boolean;
                     break;
                 default:
+                    if (type == typeof(Guid))
+                        dbType = DbType.Guid;
+                    else if(type == typeof(DateTimeOffset))
+                        dbType = DbType.DateTimeOffset;
+                    else
                     Enum.TryParse(Type.GetTypeCode(type).ToString(), true, out dbType);
                     break;
             }
