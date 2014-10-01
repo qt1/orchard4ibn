@@ -25,7 +25,7 @@ namespace Orchard.Data.Migration.Schema {
                     else if(type == typeof(DateTimeOffset))
                         dbType = DbType.DateTimeOffset;
                     else
-                    Enum.TryParse(Type.GetTypeCode(type).ToString(), true, out dbType);
+                        Enum.TryParse(Type.GetTypeCode(type).ToString(), true, out dbType);
                     break;
             }
 
