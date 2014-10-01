@@ -1,3 +1,4 @@
 if "%~1"=="" build Build
-msbuild /t:%~1 Orchard.proj
+if "%~2"=="" build %1 Orchard.proj
+msbuild /t:%~1 %2
 
