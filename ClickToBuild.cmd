@@ -1,5 +1,16 @@
 if "%WindowsSdkDir%" neq "" goto build
 
+FOR %%b in ( 
+       "%VS120COMNTOOLS%..\..\VC\vcvarsall.bat"
+       "%VS110COMNTOOLS%..\..\VC\vcvarsall.bat"
+    ) do (
+    if exist %%b ( 
+       call %%b x86
+       goto build
+    )
+)
+
+
 FOR %%v in (12 11) do ( 
   echo %%v 
   FOR %%b in ( 
