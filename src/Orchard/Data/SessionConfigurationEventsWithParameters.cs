@@ -1,8 +1,12 @@
-﻿using FluentNHibernate.Automapping;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using FluentNHibernate.Automapping;
 using FluentNHibernate.Cfg;
 using NHibernate.Cfg;
-using Orchard.Utility;
 using Orchard.Data.Providers;
+using Orchard.Environment.ShellBuilders.Models;
+using Orchard.Utility;
 
 namespace Orchard.Data
 {
@@ -15,6 +19,18 @@ namespace Orchard.Data
         /// The parameters are set before any of the functions are called.
         /// </summary>
         public SessionFactoryParameters Parameters { set; get; }
+
+        /// <summary>
+        /// Returns the BlueprintDescriptors - translating from type to DB Table names
+        /// </summary>
+        public Dictionary<Type, RecordBlueprint> BlueprintDescriptors {
+            get {
+                if (_descriptors == null)
+                    _descriptors = Parameters.RecordDescriptors.ToDictionary(d => d.Type);
+                return _descriptors;
+            }
+        }
+        protected Dictionary<Type, RecordBlueprint> _descriptors = null;
 
         /// <summary>
         /// Called when an empty fluent configuration object has been created, 
