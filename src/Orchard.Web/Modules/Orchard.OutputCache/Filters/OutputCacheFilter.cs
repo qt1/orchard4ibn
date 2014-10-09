@@ -19,10 +19,12 @@ using Orchard.Mvc.Filters;
 using Orchard.Services;
 using Orchard.Themes;
 using Orchard.UI.Admin;
+using Orchard.UI.Notify;
 using Orchard.Utility.Extensions;
 using System.Collections.Specialized;
 using Orchard.OutputCache.ViewModels;
 using Orchard.UI.Admin.Notification;
+using Orchard.DisplayManagement.Shapes;
 
 namespace Orchard.OutputCache.Filters {
     public class OutputCacheFilter : FilterProvider, IActionFilter, IResultFilter {
@@ -38,7 +40,7 @@ namespace Orchard.OutputCache.Filters {
         private readonly ISignals _signals;
         private readonly ShellSettings _shellSettings;
         private readonly ICacheControlStrategy _cacheControlStrategy;
-        private readonly INotificationManager _notificationManager;
+        private readonly INotifier _notifier;
 
         TextWriter _originalWriter;
         StringWriter _cachingWriter;
@@ -57,9 +59,9 @@ namespace Orchard.OutputCache.Filters {
             ICacheService cacheService,
             ISignals signals,
             ShellSettings shellSettings,
-            ICacheControlStrategy cacheControlStrategy,
-            INotificationManager notificationManager 
-            ) {
+            ICacheControlStrategy cacheControlStrategy, 
+            INotifier notifier) {
+
             _cacheManager = cacheManager;
             _cacheStorageProvider = cacheStorageProvider;
             _tagCache = tagCache;
@@ -71,7 +73,7 @@ namespace Orchard.OutputCache.Filters {
             _signals = signals;
             _shellSettings = shellSettings;
             _cacheControlStrategy = cacheControlStrategy;
-            _notificationManager = notificationManager;
+            _notifier = notifier;
 
             Logger = NullLogger.Instance;
         }
@@ -345,7 +347,7 @@ namespace Orchard.OutputCache.Filters {
             }
 
             // don't cache the result if there were some notifications
-            if (_notificationManager.GetNotifications().Any()) {
+            if (_notifier.List().Any()) {
                 return;
             }
 
