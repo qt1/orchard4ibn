@@ -66,16 +66,55 @@ namespace Orchard.Email.Services {
                 IsBodyHtml = true
             };
 
-            var section = (SmtpSection)ConfigurationManager.GetSection("system.net/mailSettings/smtp");
-            mailMessage.From = !String.IsNullOrWhiteSpace(_smtpSettings.Address) 
-                ? new MailAddress(_smtpSettings.Address) 
-                : new MailAddress(section.From);
+            if (parameters.ContainsKey("Message")) {
+                // a full message object is provided by the sender. Use is and fill in missing parts as needed.
+
+                MailMessage oldMessage = mailMessage;
+                mailMessage = (MailMessage)parameters["Message"];
+
+                if (string.IsNullOrWhiteSpace(mailMessage.Subject))
+                    mailMessage.Subject = oldMessage.Subject;
+
+                if (string.IsNullOrWhiteSpace(mailMessage.Body)) {
+                    mailMessage.Body = oldMessage.Body;
+                    mailMessage.IsBodyHtml = oldMessage.IsBodyHtml;
+                }
+            }
+
+            foreach (var recipient in emailMessage.Recipients.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)) {
+                mailMessage.To.Add(new MailAddress(recipient));
+            }
+
+            if (parameters.ContainsKey("CC")) {
+                foreach (var recipient in ((string)parameters["CC"]).Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)) {
+                    mailMessage.CC.Add(new MailAddress(recipient));
+                }
+            }
+
+            if (parameters.ContainsKey("Bcc")) {
+                foreach (var recipient in ((string)parameters["Bcc"]).Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)) {
+                    mailMessage.Bcc.Add(new MailAddress(recipient));
+                }
+            }
+
+            if (parameters.ContainsKey("From")) 
+                    mailMessage.From = new MailAddress((string)parameters["From"]);
+
+            if (parameters.ContainsKey("ReplyTo")) {
+                foreach (var recipient in ((string)parameters["ReplyTo"]).Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)) {
+                    mailMessage.ReplyToList.Add(new MailAddress(recipient));
+                }
+            }
+
+            if (mailMessage.From == null) {
+                // take 'From' address from site settings
+                var section = (SmtpSection)ConfigurationManager.GetSection("system.net/mailSettings/smtp");
+                mailMessage.From = !String.IsNullOrWhiteSpace(_smtpSettings.Address)
+                    ? new MailAddress(_smtpSettings.Address)
+                    : new MailAddress(section.From);
+            }
 
             try {
-                foreach (var recipient in emailMessage.Recipients.Split(new [] {',', ';'}, StringSplitOptions.RemoveEmptyEntries)) {
-                    mailMessage.To.Add(new MailAddress(recipient));
-                }
-
                 _smtpClientField.Value.Send(mailMessage);
             }
             catch (Exception e) {
