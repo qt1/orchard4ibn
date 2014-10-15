@@ -40,7 +40,6 @@ namespace Orchard.OutputCache.Filters {
         private readonly ISignals _signals;
         private readonly ShellSettings _shellSettings;
         private readonly ICacheControlStrategy _cacheControlStrategy;
-        private readonly INotifier _notifier;
 
         TextWriter _originalWriter;
         StringWriter _cachingWriter;
@@ -59,8 +58,7 @@ namespace Orchard.OutputCache.Filters {
             ICacheService cacheService,
             ISignals signals,
             ShellSettings shellSettings,
-            ICacheControlStrategy cacheControlStrategy, 
-            INotifier notifier) {
+            ICacheControlStrategy cacheControlStrategy) {
 
             _cacheManager = cacheManager;
             _cacheStorageProvider = cacheStorageProvider;
@@ -73,7 +71,6 @@ namespace Orchard.OutputCache.Filters {
             _signals = signals;
             _shellSettings = shellSettings;
             _cacheControlStrategy = cacheControlStrategy;
-            _notifier = notifier;
 
             Logger = NullLogger.Instance;
         }
@@ -224,7 +221,8 @@ namespace Orchard.OutputCache.Filters {
             var parameters = new Dictionary<string, object>(filterContext.ActionParameters);
 
             foreach (var key in queryString.AllKeys) {
-                if (key == null) continue;
+                if (key == null || (_varyQueryStringParameters != null
+                    && !_varyQueryStringParameters.Contains(key))) continue;
 
                 // ignore pages with the RefreshKey
                 if (String.Equals(RefreshKey, key, StringComparison.OrdinalIgnoreCase)) {
@@ -347,7 +345,9 @@ namespace Orchard.OutputCache.Filters {
             }
 
             // don't cache the result if there were some notifications
-            if (_notifier.List().Any()) {
+            var hasNotifications = !String.IsNullOrEmpty(Convert.ToString(filterContext.Controller.TempData["messages"]));
+            if (hasNotifications) {
+                Logger.Debug("Not caching: notifications present");
                 return;
             }
 
@@ -375,10 +375,8 @@ namespace Orchard.OutputCache.Filters {
 
             Logger.Debug("Cache item added: " + _cacheItem.CacheKey);
 
-            // remove only the current version of the page
-            _cacheService.RemoveByTag(_cacheKey);
-
-            // add data to cache
+            // update the cached data
+            _cacheStorageProvider.Remove(_cacheKey);
             _cacheStorageProvider.Set(_cacheKey, _cacheItem);
 
             // add to the tags index
@@ -420,25 +418,22 @@ namespace Orchard.OutputCache.Filters {
             Logger.Debug("Redirect on POST");
             var redirectUrl = redirectResult.Url;
 
-            if (!VirtualPathUtility.IsAbsolute(redirectUrl)) {
-                var applicationRoot = new UrlHelper(filterContext.HttpContext.Request.RequestContext).MakeAbsolute("/");
-                if (redirectUrl.StartsWith(applicationRoot, StringComparison.OrdinalIgnoreCase)) {
-                    redirectUrl = "~/" + redirectUrl.Substring(applicationRoot.Length);
-                    redirectUrl = VirtualPathUtility.ToAbsolute(redirectUrl);
-                }
+            if (filterContext.HttpContext.Request.IsLocalUrl(redirectUrl)) {
+                var helper = new UrlHelper(filterContext.HttpContext.Request.RequestContext);
+                var absolutePath = new Uri(helper.MakeAbsolute(redirectUrl)).AbsolutePath;
+
+                // querystring invariant key
+                var invariantCacheKey = ComputeCacheKey(
+                    _shellSettings.Name,
+                    absolutePath,
+                    () => _workContext.CurrentCulture,
+                    _themeManager.GetRequestTheme(filterContext.RequestContext).Id,
+                    null
+                    );
+
+                // remove all cached version of the same page
+                _cacheService.RemoveByTag(invariantCacheKey);
             }
-
-            // querystring invariant key
-            var invariantCacheKey = ComputeCacheKey(
-                _shellSettings.Name,
-                redirectUrl,
-                () => _workContext.CurrentCulture,
-                _themeManager.GetRequestTheme(filterContext.RequestContext).Id,
-                null
-                );
-
-            // remove all cached version of the same page
-            _cacheService.RemoveByTag(invariantCacheKey);
 
             // adding a refresh key so that the redirection doesn't get restored
             // from a cached version on a proxy
@@ -491,7 +486,6 @@ namespace Orchard.OutputCache.Filters {
                 response.Cache.SetMaxAge(maxAge);
             }
 
-            response.Cache.VaryByParams["*"] = true;
             response.DisableUserCache();
 
             // keeping this examples for later usage
@@ -506,7 +500,10 @@ namespace Orchard.OutputCache.Filters {
                 }
             }
 
-            if (_varyQueryStringParameters != null) {
+            if (_varyQueryStringParameters == null) {
+                response.Cache.VaryByParams["*"] = true;
+            }
+            else {
                 foreach (var queryStringParam in _varyQueryStringParameters) {
                     response.Cache.VaryByParams[queryStringParam] = true;
                 }
@@ -518,14 +515,7 @@ namespace Orchard.OutputCache.Filters {
         }
 
         private string ComputeCacheKey(ControllerContext controllerContext, IEnumerable<KeyValuePair<string, object>> parameters) {
-            var url = controllerContext.HttpContext.Request.RawUrl;
-            if (!VirtualPathUtility.IsAbsolute(url)) {
-                var applicationRoot = new UrlHelper(controllerContext.HttpContext.Request.RequestContext).MakeAbsolute("/");
-                if (url.StartsWith(applicationRoot, StringComparison.OrdinalIgnoreCase)) {
-                    url = "~/" + url.Substring(applicationRoot.Length);
-                    url = VirtualPathUtility.ToAbsolute(url);
-                }
-            }
+            var url = controllerContext.HttpContext.Request.Url.AbsolutePath;
             return ComputeCacheKey(_shellSettings.Name, url, () => _workContext.CurrentCulture, _themeManager.GetRequestTheme(controllerContext.RequestContext).Id, parameters);
         }
 
