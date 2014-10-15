@@ -15,7 +15,7 @@ namespace Orchard.Data
         /// </summary>
         /// <param name="cfg">Empty fluent NH configuration object.</param>
         /// <param name="defaultModel">Default persistence model that is about to be used.</param>
-        public virtual void Created(FluentConfiguration cfg, AutoPersistenceModel defaultModel) {
+        public override void Created(FluentConfiguration cfg, AutoPersistenceModel defaultModel) {
             defaultModel.OverrideAll(map => {
                 map.IgnoreProperties(x => x.MemberInfo.IsDefined(typeof(DoNotMapAttribute), false));
             });
