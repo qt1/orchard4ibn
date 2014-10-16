@@ -1,5 +1,3 @@
-if "%WindowsSdkDir%" neq "" goto build
-
 FOR %%b in ( 
        "%VS120COMNTOOLS%..\..\VC\vcvarsall.bat"
        "%ProgramFiles(x86)%\Microsoft Visual Studio 12.0\VC\vcvarsall.bat"
