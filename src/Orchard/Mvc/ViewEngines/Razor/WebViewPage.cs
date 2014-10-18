@@ -208,7 +208,7 @@ namespace Orchard.Mvc.ViewEngines.Razor {
                     && !path.StartsWith("~/Media", StringComparison.OrdinalIgnoreCase)
                     && !path.StartsWith("~/Core", StringComparison.OrdinalIgnoreCase)) {
                     
-                    return base.Href("~/" + _tenantPrefix + path.Substring(2), pathParts);
+                        return base.Href("~/" + _tenantPrefix + path.Substring(1), pathParts);
                 }
 
             }
