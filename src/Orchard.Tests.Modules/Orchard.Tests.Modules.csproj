@@ -161,6 +161,7 @@
     <Compile Include="Recipes\RecipeHandlers\ModuleRecipeHandlerTest.cs" />
     <Compile Include="Recipes\RecipeHandlers\ThemeRecipeHandlerTest.cs" />
     <Compile Include="Recipes\Services\RecipeManagerTests.cs" />
+    <Compile Include="Roles\Services\RoleServiceTests2.cs" />
     <Compile Include="Scripting.Dlr\EvaluatorTests.cs" />
     <Compile Include="Scripting\EvaluatorTestsBase.cs" />
     <Compile Include="Scripting\EvaluatorTests.cs" />
