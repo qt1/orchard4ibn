@@ -46,12 +46,16 @@ namespace Orchard.Data.Migration.Schema {
         }
 
         public SchemaBuilder ExecuteSql(string sql, Action<SqlStatementCommand> statement = null) {
-            var sqlStatmentCommand = new SqlStatementCommand(sql);
-            if ( statement != null ) {
-                statement(sqlStatmentCommand);
+            try {
+                var sqlStatmentCommand = new SqlStatementCommand(sql);
+                if (statement != null) {
+                    statement(sqlStatmentCommand);
+                }
+                Run(sqlStatmentCommand);
+                return this;
+            } catch (Exception ex) {
+                throw new Exception("ExecuteSql failed, Sql=" + sql, ex); // Add the sql to the nested exception information
             }
-            Run(sqlStatmentCommand);
-            return this;
         }
 
         private void Run(ISchemaBuilderCommand command) {
