@@ -1,5 +1,6 @@
 ﻿using System;
 using Orchard.Data.Migration.Interpreters;
+using Orchard.Localization;
 
 namespace Orchard.Data.Migration.Schema {
     public class SchemaBuilder {
@@ -7,10 +8,13 @@ namespace Orchard.Data.Migration.Schema {
         private readonly string _featurePrefix;
         private readonly Func<string, string> _formatPrefix;
 
+        public Localizer T { get; set; }
+
         public SchemaBuilder(IDataMigrationInterpreter interpreter, string featurePrefix = null, Func<string, string> formatPrefix = null) {
             _interpreter = interpreter;
             _featurePrefix = featurePrefix ?? String.Empty;
             _formatPrefix = formatPrefix ?? (s => s ?? String.Empty);
+            T = NullLocalizer.Instance;
         }
 
         public IDataMigrationInterpreter Interpreter {
@@ -54,7 +58,7 @@ namespace Orchard.Data.Migration.Schema {
                 Run(sqlStatmentCommand);
                 return this;
             } catch (Exception ex) {
-                throw new Exception("ExecuteSql failed, Sql=" + sql, ex); // Add the sql to the nested exception information
+                throw new OrchardException(T("An unexpected error occured while executing the SQL statement: {0}", sql), ex); // Add the sql to the nested exception information
             }
         }
 
