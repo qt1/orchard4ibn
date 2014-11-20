@@ -368,7 +368,8 @@ namespace Orchard.ContentManagement {
                 return;
             }
             // create a context for the item and it's previous published record
-            var previous = contentItem.Record.Versions.SingleOrDefault(x => x.Published);
+            var previousVersions = contentItem.Record.Versions.Where(x => x.Published); // support for multiple published records
+            var previous = previousVersions.OrderBy(v => v.Number).LastOrDefault();
             var context = new PublishContentContext(contentItem, previous);
 
             // invoke handlers to acquire state, or at least establish lazy loading callbacks
@@ -378,9 +379,9 @@ namespace Orchard.ContentManagement {
                 return;
             }
 
-            if (previous != null) {
-                previous.Published = false;
-            }
+            foreach (var pv in previousVersions)
+                pv.Published = false;
+
             contentItem.VersionRecord.Published = true;
 
             Handlers.Invoke(handler => handler.Published(context), Logger);
