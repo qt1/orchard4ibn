@@ -92,7 +92,7 @@ namespace Orchard.Data.Migration.Interpreters {
             RunPendingStatements();
         }
 
-        private string PrefixTableName(string tableName) {
+        public string PrefixTableName(string tableName) {
             if (string.IsNullOrEmpty(_shellSettings.DataTablePrefix))
                 return tableName;
             return _shellSettings.DataTablePrefix + "_" + tableName;
@@ -286,6 +286,8 @@ namespace Orchard.Data.Migration.Interpreters {
         }
 
         private void Visit(StringBuilder builder, CreateColumnCommand command) {
+            bool emitNull = true;
+
             if (ExecuteCustomInterpreter(command)) {
                 return;
             }
@@ -300,6 +302,7 @@ namespace Orchard.Data.Migration.Interpreters {
             // append identity if handled
             if (command.IsIdentity && _dialect.SupportsIdentityColumns) {
                 builder.Append(Space).Append(_dialect.IdentityColumnString);
+                emitNull = !_dialect.IdentityColumnString.ToLower().Contains("null"); // already defined by identity string
             }
 
             // [default value]
@@ -308,11 +311,13 @@ namespace Orchard.Data.Migration.Interpreters {
             }
 
             // nullable
-            builder.Append(command.IsNotNull
-                               ? " not null"
-                               : !command.IsPrimaryKey && !command.IsUnique
-                                     ? _dialect.NullColumnString
-                                     : string.Empty);
+            if (emitNull) {
+                builder.Append(command.IsNotNull
+                                   ? " not null"
+                                   : !command.IsPrimaryKey && !command.IsUnique
+                                         ? _dialect.NullColumnString
+                                         : string.Empty);
+            }
 
             // append unique if handled, otherwise at the end of the satement
             if (command.IsUnique && _dialect.SupportsUnique) {
